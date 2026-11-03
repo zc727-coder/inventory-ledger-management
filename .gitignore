@@ -1,0 +1,29 @@
+# Local learning copies and backups are not part of this interview repository.
+/my-vue-project-01/
+/stacktrail-ai/
+/备份/
+
+# Local tooling and generated files.
+.idea/
+*.iml
+**/.idea/
+**/*.iml
+**/.claude/
+**/CLAUDE.md
+**/Microsoft/
+**/target/
+**/node_modules/
+**/dist/
+**/build/
+**/project/
+**/logs/
+**/upload/
+**/runtime/
+**/*.log
+**/.env
+**/.env.*
+!**/.env.example
+**/AGENTS.md
+**/skill-learn.md
+**/generator/
+**/src/main/java/**/*.xlsx

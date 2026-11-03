@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.sycoder.mapper.SysLoginLogMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="cn.sycoder.domain.SysLoginLog">
+        <id column="log_id" property="logId" />
+        <result column="user_id" property="userId" />
+        <result column="user_name" property="userName" />
+        <result column="login_status" property="loginStatus" />
+        <result column="login_ip" property="loginIp" />
+        <result column="user_agent" property="userAgent" />
+        <result column="message" property="message" />
+        <result column="login_time" property="loginTime" />
+        <result column="create_time" property="createTime" />
+        <result column="deleted" property="deleted" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        log_id, user_id, user_name, login_status, login_ip, user_agent, message, login_time, create_time, deleted
+    </sql>
+
+    <select id="tableExists" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM information_schema.tables
+        WHERE table_schema = DATABASE()
+          AND table_name = #{tableName}
+    </select>
+
+    <update id="createMonthlyTable">
+        CREATE TABLE IF NOT EXISTS ${tableName} LIKE sys_login_log
+    </update>
+
+    <insert id="insertMonthly" useGeneratedKeys="true" keyProperty="log.logId">
+        INSERT INTO ${tableName} (
+            user_id,
+            user_name,
+            login_status,
+            login_ip,
+            user_agent,
+            message,
+            login_time,
+            create_time,
+            deleted
+        ) VALUES (
+            #{log.userId},
+            #{log.userName},
+            #{log.loginStatus},
+            #{log.loginIp},
+            #{log.userAgent},
+            #{log.message},
+            #{log.loginTime},
+            #{log.createTime},
+            #{log.deleted}
+        )
+    </insert>
+
+    <select id="selectTopLoginUsers" resultType="cn.sycoder.response.ChartItemResponse">
+        SELECT t.name AS name, SUM(t.stat_value) AS value
+        FROM (
+            <foreach collection="tableNames" item="tableName" separator=" UNION ALL ">
+                SELECT
+                    user_name AS name,
+                    COUNT(1) AS stat_value
+                FROM ${tableName}
+                WHERE deleted = 0
+                  AND login_status = 'SUCCESS'
+                <if test="startTime != null">
+                    AND login_time &gt;= #{startTime}
+                </if>
+                <if test="endTime != null">
+                    AND login_time &lt;= #{endTime}
+                </if>
+                GROUP BY user_name
+            </foreach>
+        ) t
+        WHERE t.name IS NOT NULL
+          AND t.name != ''
+        GROUP BY t.name
+        HAVING value &gt; 0
+        ORDER BY value DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

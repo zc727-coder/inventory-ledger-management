@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.sycoder.mapper.SysModuleMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="cn.sycoder.domain.SysModule">
+        <id column="module_id" property="moduleId" />
+        <result column="parent_id" property="parentId" />
+        <result column="module_name" property="moduleName" />
+        <result column="module_no" property="moduleNo" />
+        <result column="module_level" property="moduleLevel" />
+        <result column="module_url" property="moduleUrl" />
+        <result column="module_icon" property="moduleIcon" />
+        <result column="module_order" property="moduleOrder" />
+        <result column="system_no" property="systemNo" />
+        <result column="is_leaf" property="isLeaf" />
+        <result column="full_index" property="fullIndex" />
+        <result column="module_notes" property="moduleNotes" />
+        <result column="create_by" property="createBy" />
+        <result column="update_by" property="updateBy" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+        <result column="deleted" property="deleted" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        module_id, parent_id, module_name, module_no, module_level, module_url, module_icon, module_order, system_no, is_leaf, full_index, module_notes, create_by, update_by, create_time, update_time, deleted
+    </sql>
+
+</mapper>

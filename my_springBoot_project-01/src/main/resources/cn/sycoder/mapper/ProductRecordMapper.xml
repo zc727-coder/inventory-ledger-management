@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.sycoder.mapper.ProductRecordMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="cn.sycoder.domain.ProductRecord">
+        <id column="record_id" property="recordId" />
+        <result column="product_id" property="productId" />
+        <result column="record_date" property="recordDate" />
+        <result column="warehouse_name" property="warehouseName" />
+        <result column="location_name" property="locationName" />
+        <result column="product_code" property="productCode" />
+        <result column="product_name" property="productName" />
+        <result column="product_type" property="productType" />
+        <result column="biz_type" property="bizType" />
+        <result column="biz_reason" property="bizReason" />
+        <result column="in_quantity" property="inQuantity" />
+        <result column="out_quantity" property="outQuantity" />
+        <result column="balance_quantity" property="balanceQuantity" />
+        <result column="unit" property="unit" />
+        <result column="operator_name" property="operatorName" />
+        <result column="remark" property="remark" />
+        <result column="source_type" property="sourceType" />
+        <result column="create_by" property="createBy" />
+        <result column="update_by" property="updateBy" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+        <result column="deleted" property="deleted" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        record_id, product_id, record_date, warehouse_name, location_name, product_code, product_name, product_type, biz_type, biz_reason, in_quantity, out_quantity, balance_quantity, unit, operator_name, remark, source_type, create_by, update_by, create_time, update_time, deleted
+    </sql>
+
+    <select id="tableExists" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM information_schema.tables
+        WHERE table_schema = DATABASE()
+          AND table_name = #{tableName}
+    </select>
+
+    <update id="createMonthlyTable">
+        CREATE TABLE IF NOT EXISTS ${tableName} LIKE product_record
+    </update>
+
+    <insert id="insertMonthly" useGeneratedKeys="true" keyProperty="record.recordId">
+        INSERT INTO ${tableName} (
+            product_id,
+            record_date,
+            warehouse_name,
+            location_name,
+            product_code,
+            product_name,
+            product_type,
+            biz_type,
+            biz_reason,
+            in_quantity,
+            out_quantity,
+            balance_quantity,
+            unit,
+            operator_name,
+            remark,
+            source_type,
+            create_by,
+            update_by,
+            create_time,
+            update_time,
+            deleted
+        ) VALUES (
+            #{record.productId},
+            #{record.recordDate},
+            #{record.warehouseName},
+            #{record.locationName},
+            #{record.productCode},
+            #{record.productName},
+            #{record.productType},
+            #{record.bizType},
+            #{record.bizReason},
+            #{record.inQuantity},
+            #{record.outQuantity},
+            #{record.balanceQuantity},
+            #{record.unit},
+            #{record.operatorName},
+            #{record.remark},
+            #{record.sourceType},
+            #{record.createBy},
+            #{record.updateBy},
+            #{record.createTime},
+            #{record.updateTime},
+            #{record.deleted}
+        )
+    </insert>
+
+    <select id="selectMonthlyRecords" resultMap="BaseResultMap">
+        SELECT *
+        FROM (
+            <foreach collection="tableNames" item="tableName" separator=" UNION ALL ">
+                SELECT
+                <include refid="Base_Column_List" />
+                FROM ${tableName}
+                WHERE deleted = 0
+                <if test="productName != null and productName != ''">
+                    AND product_name LIKE CONCAT('%', #{productName}, '%')
+                </if>
+                <if test="productCode != null and productCode != ''">
+                    AND product_code LIKE CONCAT('%', #{productCode}, '%')
+                </if>
+                <if test="location != null and location != ''">
+                    AND (
+                        warehouse_name LIKE CONCAT('%', #{location}, '%')
+                        OR location_name LIKE CONCAT('%', #{location}, '%')
+                    )
+                </if>
+                <if test="startTime != null">
+                    AND record_date &gt;= #{startTime}
+                </if>
+                <if test="endTime != null">
+                    AND record_date &lt;= #{endTime}
+                </if>
+            </foreach>
+        ) t
+        ORDER BY t.record_date ASC, t.record_id ASC
+    </select>
+
+    <select id="selectTopProducts" resultType="cn.sycoder.response.ChartItemResponse">
+        SELECT t.name AS name, SUM(t.stat_value) AS value
+        FROM (
+            <foreach collection="tableNames" item="tableName" separator=" UNION ALL ">
+                SELECT
+                    product_name AS name,
+                    <choose>
+                        <when test="bizType == 'IN'">
+                            SUM(IFNULL(in_quantity, 0)) AS stat_value
+                        </when>
+                        <otherwise>
+                            SUM(IFNULL(out_quantity, 0)) AS stat_value
+                        </otherwise>
+                    </choose>
+                FROM ${tableName}
+                WHERE deleted = 0
+                  AND biz_type = #{bizType}
+                <if test="startTime != null">
+                    AND record_date &gt;= #{startTime}
+                </if>
+                <if test="endTime != null">
+                    AND record_date &lt;= #{endTime}
+                </if>
+                GROUP BY product_name
+            </foreach>
+        ) t
+        WHERE t.name IS NOT NULL
+          AND t.name != ''
+        GROUP BY t.name
+        HAVING value &gt; 0
+        ORDER BY value DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectQuantityByPeriod" resultType="cn.sycoder.response.ChartItemResponse">
+        SELECT t.name AS name, SUM(t.stat_value) AS value
+        FROM (
+            <foreach collection="tableNames" item="tableName" separator=" UNION ALL ">
+                SELECT
+                    <choose>
+                        <when test="groupByMonth">
+                            DATE_FORMAT(record_date, '%Y-%m') AS name,
+                        </when>
+                        <otherwise>
+                            DATE_FORMAT(record_date, '%Y-%m-%d') AS name,
+                        </otherwise>
+                    </choose>
+                    <choose>
+                        <when test="bizType == 'IN'">
+                            SUM(IFNULL(in_quantity, 0)) AS stat_value
+                        </when>
+                        <otherwise>
+                            SUM(IFNULL(out_quantity, 0)) AS stat_value
+                        </otherwise>
+                    </choose>
+                FROM ${tableName}
+                WHERE deleted = 0
+                  AND biz_type = #{bizType}
+                <if test="startTime != null">
+                    AND record_date &gt;= #{startTime}
+                </if>
+                <if test="endTime != null">
+                    AND record_date &lt;= #{endTime}
+                </if>
+                GROUP BY
+                    <choose>
+                        <when test="groupByMonth">
+                            DATE_FORMAT(record_date, '%Y-%m')
+                        </when>
+                        <otherwise>
+                            DATE_FORMAT(record_date, '%Y-%m-%d')
+                        </otherwise>
+                    </choose>
+            </foreach>
+        ) t
+        GROUP BY t.name
+        ORDER BY t.name ASC
+    </select>
+
+</mapper>
