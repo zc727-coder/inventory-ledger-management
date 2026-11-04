@@ -24,7 +24,6 @@
 ```text
 my_springBoot_project-01/  Spring Boot API
 vueproject-master/         Vue management console
-docs/       架构、运行和面试说明
 ```
 
 ## 本地运行
@@ -43,4 +42,3 @@ $env:REDIS_PORT='6379'
 3. 启动后端：`mvn clean package -DskipTests`，随后执行生成的 jar。
 4. 启动前端：`npm install` 后执行 `npm run dev`。
 
-详细接口和部署说明见 `docs/`。
